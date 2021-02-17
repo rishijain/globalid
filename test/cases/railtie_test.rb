@@ -12,10 +12,10 @@ class RailtieTest < ActiveSupport::TestCase
 
   def setup
     Rails.env = 'development'
-    @app = BlogApp::Application.new
+    @app = BlogApp::Application.send(:new)
     @app.config.eager_load = false
     @app.config.logger = Logger.new(nil)
-    @app.config.secret_key_base = ('x' * 30)
+    @app.config.secret_token = ('x' * 30)
   end
 
   test 'GlobalID.app for Blog::Application defaults to blog' do
@@ -35,41 +35,20 @@ class RailtieTest < ActiveSupport::TestCase
     assert_nil SignedGlobalID.expires_in
   end
 
-  test 'config.global_id can be used to set configurations after the railtie has been loaded' do
-    @app.config.eager_load = true
-    @app.config.before_eager_load do
-      @app.config.global_id.app = 'foobar'
-      @app.config.global_id.expires_in = 1.year
-    end
+  test 'SignedGlobalID.verifier defaults to Blog::Application.message_verifier(:signed_global_ids) when secret_token is present' do  
+    @app.initialize!  
+    message = {id: 42}  
+    signed_message = SignedGlobalID.verifier.generate(message) 
 
-    @app.initialize!
-    assert_equal 'foobar', GlobalID.app
-    assert_equal 1.year, SignedGlobalID.expires_in
+    generated_key = OpenSSL::PKCS5.pbkdf2_hmac_sha1(@app.config.secret_token, 'signed_global_ids', 1000, 64)
+    assert_equal ActiveSupport::MessageVerifier.new(generated_key).generate(message), signed_message
   end
 
-  test 'config.global_id can be used to explicitly set SignedGlobalID.expires_in to nil after the railtie has been loaded' do
-    @app.config.eager_load = true
-    @app.config.before_eager_load do
-      @app.config.global_id.expires_in = nil
-    end
-
-    @app.initialize!
-    assert_nil SignedGlobalID.expires_in
-  end
-
-
-  test 'SignedGlobalID.verifier defaults to Blog::Application.message_verifier(:signed_global_ids) when secret_key_base is present' do
-    @app.initialize!
-    message = {id: 42}
-    signed_message = SignedGlobalID.verifier.generate(message)
-    assert_equal @app.message_verifier(:signed_global_ids).generate(message), signed_message
-  end
-
-  test 'SignedGlobalID.verifier defaults to nil when secret_key_base is not present' do
+  test 'SignedGlobalID.verifier defaults to nil when secret_token is not present' do
     original_env, Rails.env = Rails.env, 'production'
 
     begin
-      @app.config.secret_key_base = nil
+      @app.config.secret_token = nil
       @app.initialize!
       assert_nil SignedGlobalID.verifier
     ensure

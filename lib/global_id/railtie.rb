@@ -12,11 +12,12 @@ class GlobalID
   # Set up the signed GlobalID verifier and include Active Record support.
   class Railtie < Rails::Railtie # :nodoc:
     config.global_id = ActiveSupport::OrderedOptions.new
-    config.eager_load_namespaces << GlobalID
+
+    ['global_id/global_id', 'global_id/locator', 'global_id/signed_global_id', 'global_id/verifier'].each { |file| require file }
 
     initializer 'global_id' do |app|
       default_expires_in = 1.month
-      default_app_name = app.railtie_name.remove('_application').dasherize
+      default_app_name = app.railtie_name.gsub('_application', '').dasherize
 
       GlobalID.app = app.config.global_id.app ||= default_app_name
       SignedGlobalID.expires_in = app.config.global_id.fetch(:expires_in, default_expires_in)
@@ -26,7 +27,10 @@ class GlobalID
         SignedGlobalID.expires_in = app.config.global_id.fetch(:expires_in, default_expires_in)
 
         app.config.global_id.verifier ||= begin
-          GlobalID::Verifier.new(app.key_generator.generate_key('signed_global_ids'))
+          if app.config.secret_token
+            generated_key = OpenSSL::PKCS5.pbkdf2_hmac_sha1(app.config.secret_token, 'signed_global_ids', 1000, 64)
+            GlobalID::Verifier.new(generated_key)
+          end
         rescue ArgumentError
           nil
         end

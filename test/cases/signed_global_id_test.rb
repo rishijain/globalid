@@ -132,7 +132,7 @@ class SignedGlobalIDExpirationTest < ActiveSupport::TestCase
       assert SignedGlobalID.parse(encoded_sgid)
 
       travel 2.minutes
-      assert_not SignedGlobalID.parse(encoded_sgid)
+      assert_nil SignedGlobalID.parse(encoded_sgid)
     end
   end
 
@@ -144,7 +144,7 @@ class SignedGlobalIDExpirationTest < ActiveSupport::TestCase
       assert SignedGlobalID.parse(encoded_sgid)
 
       travel 1.hour + 3.seconds
-      assert_not SignedGlobalID.parse(encoded_sgid)
+      assert_nil SignedGlobalID.parse(encoded_sgid)
     end
   end
 
@@ -157,7 +157,7 @@ class SignedGlobalIDExpirationTest < ActiveSupport::TestCase
     end
 
     Time.stub :now, present + 2.seconds do
-      assert_not SignedGlobalID.parse(encoded_sgid)
+      assert_nil SignedGlobalID.parse(encoded_sgid)
     end
   end
 
@@ -180,7 +180,7 @@ class SignedGlobalIDExpirationTest < ActiveSupport::TestCase
     assert_equal date, sgid.expires_at
 
     travel 1.day
-    assert_not SignedGlobalID.parse(sgid.to_s)
+    assert_nil SignedGlobalID.parse(sgid.to_s)
   end
 
   test 'passing nil expires_at turns off expiration checking' do

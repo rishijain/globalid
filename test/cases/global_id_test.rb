@@ -80,7 +80,7 @@ class GlobalIDCreationTest < ActiveSupport::TestCase
     assert_equal Person.find(@person_uuid_gid.model_id),
                  @person_uuid_gid.find(only: GlobalID::Identification)
     assert_equal PersonModel.find(@person_model_gid.model_id),
-                 @person_model_gid.find(only: ActiveModel::Model)
+                 @person_model_gid.find(only: ActiveModel::Conversion)
     assert_equal Person::Child.find(@person_namespaced_gid.model_id),
                  @person_namespaced_gid.find(only: GlobalID::Identification)
   end
@@ -118,7 +118,7 @@ class GlobalIDCreationTest < ActiveSupport::TestCase
                  @person_uuid_gid.find(only: [bignum_class,
                                               GlobalID::Identification])
     assert_equal PersonModel.find(@person_model_gid.model_id),
-                 @person_model_gid.find(only: [String, ActiveModel::Model])
+                 @person_model_gid.find(only: [String, ActiveModel::Conversion])
     assert_equal Person::Child.find(@person_namespaced_gid.model_id),
                  @person_namespaced_gid.find(only: [Integer, GlobalID::Identification])
   end
